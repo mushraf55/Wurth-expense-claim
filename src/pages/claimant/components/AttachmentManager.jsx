@@ -92,7 +92,7 @@ const AttachmentManager = ({ attachments, onAttachmentsChange, onNotify }) => {
   return (
     <div className="col-span-12 space-y-2">
       <label className="block font-label-md text-label-md text-on-surface-variant font-semibold">Attachments</label>
-      <input ref={fileInputRef} type="file" accept="image/*,.heic,.heif,application/pdf" capture="environment" multiple onChange={handleFileUpload} className="hidden" />
+      <input ref={fileInputRef} type="file" accept="image/*,.heic,.heif,application/pdf"  multiple onChange={handleFileUpload} className="hidden" />
       <div className={`border-2 border-dashed p-6 flex flex-col sm:flex-row items-center gap-6 rounded-lg transition-all bg-surface-bright ${isDragging ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10 scale-[1.02]' : 'border-outline-variant'}`}
         onDragOver={handleDragOver} onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDrop={handleDrop}>
         {attachments.length > 0 ? attachments.map((file) => (
