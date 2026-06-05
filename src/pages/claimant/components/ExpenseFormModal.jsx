@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FX_RATES } from '../../../constants/fxRates';
 import { CATEGORIES, CATEGORY_COST_TYPES, getCostTypeName, getDefaultCostType } from '../../../constants/costTypeCategories';
-import { generateBulkClaimPdf } from '../../../utils/generateClaimPdf';
-import { exportExpenseClaimExcel } from '../../../utils/exportExcel';
+
 import AttachmentManager from './AttachmentManager';
 import API_BASE from '../../../config';
 
@@ -150,47 +149,8 @@ const ExpenseFormModal = ({ isOpen, onClose, onSubmit }) => {
         attachments: attachmentData,
       }));
       const refNums = await onSubmit(claimsData);
-      const lineItems = validItems.map((item, idx) => ({
-        purpose: item.purpose,
-        plCostTypeNr: item.costTypeNr,
-        plCostTypeName: item.costTypeName,
-        pillarName: item.pillar,
-        date: item.date,
-        description: item.description,
-        country: item.country,
-        receiptNo: receiptNos[idx] || '',
-        originalAmount: parseFloat(item.amount) || 0,
-        aedAmount: parseFloat(item.totalAed) || 0,
-        category: (() => {
-          const sectionMap = { Travel: 'A', Office: 'B', 'Meals & Entertainment': 'C', Telecommunication: 'D', Marketing: 'E', Logistics: 'F' };
-          return sectionMap[category] || 'C';
-        })(),
-      }));
-      await exportExpenseClaimExcel(
-        { lastName: 'Bulk Entry', firstName: '', accountNo: 'AE****0123', submissionDate: new Date().toISOString().split('T')[0], referenceCode: refNums[0] || 'BULK' },
-        lineItems
-      );
-      const pdfClaims = validItems.map((item, idx) => ({
-        ref: refNums[idx] || '',
-        employeeName: 'Bulk Entry',
-        date: item.date,
-        purpose: item.purpose,
-        costType: `${item.costTypeNr} - ${item.costTypeName}`,
-        pillar: item.pillar,
-        country: item.country,
-        currency: item.currency,
-        amount: item.amount,
-        totalAed: item.totalAed,
-        category,
-        receiptNo: receiptNos[idx] || '',
-        description: item.description,
-        status: 'PENDING',
-        iban: 'AE****0123',
-        attachments: attachmentData,
-      }));
-      await generateBulkClaimPdf(pdfClaims, API_BASE);
       resetForm();
-      showNotification(`Successfully submitted ${refNums.length} claims! Excel & PDF downloaded.`, 'success');
+      showNotification(`Successfully submitted ${refNums.length} claims!`, 'success');
       setTimeout(() => { setSubmitting(false); onClose(); }, 800);
     } catch (err) {
       showNotification(`Error: ${err.message}`, 'error');

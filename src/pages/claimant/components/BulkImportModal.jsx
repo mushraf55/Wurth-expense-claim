@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ExcelJS from 'exceljs';
 import { getDefaultCostType } from '../../../constants/costTypeCategories';
-import { exportExpenseClaimExcel } from '../../../utils/exportExcel';
+
 import API_BASE from '../../../config';
 
 const SECTION_MAP = {
@@ -165,35 +165,7 @@ const BulkImportModal = ({ isOpen, onClose, onSubmit }) => {
 
       const refNums = await onSubmit(claimsWithReceipts);
 
-      // Generate Excel export with submitted data
-      const claimantData = {
-        firstName: '',
-        lastName: 'Bulk Import',
-        accountNo: 'AE****0123',
-        submissionDate: new Date().toISOString().split('T')[0],
-        referenceCode: refNums[0] || 'BULK',
-      };
-
-      const lineItems = claimsWithReceipts.map((claim) => {
-        const costTypeParts = claim.costType.split(' - ');
-        return {
-          purpose: claim.purpose,
-          plCostTypeNr: costTypeParts[0] || '',
-          plCostTypeName: costTypeParts[1] || '',
-          pillarName: claim.pillar,
-          date: claim.date,
-          description: claim.description,
-          country: claim.country,
-          receiptNo: claim.receiptNo,
-          originalAmount: parseFloat(claim.amount) || 0,
-          aedAmount: parseFloat(claim.totalAed) || 0,
-          category: Object.keys(SECTION_MAP).find(k => SECTION_MAP[k] === claim.category) || 'C',
-        };
-      });
-
-      await exportExpenseClaimExcel(claimantData, lineItems);
-
-      showNotification(`Successfully submitted ${refNums.length} claims! Excel downloaded.`, 'success');
+      showNotification(`Successfully submitted ${refNums.length} claims!`, 'success');
       setParsedClaims([]);
       setReceiptNos([]);
       setFileName('');
