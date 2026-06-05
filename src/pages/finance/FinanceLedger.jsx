@@ -46,14 +46,16 @@ const FinanceLedger = ({ searchTerm }) => {
     } catch (error) { console.error('Excel export error:', error); setFeedbackMsg('Failed to export. Please try again.'); setTimeout(() => setFeedbackMsg(null), 3000); }
   };
 
-  const showNotification = (msg, type = 'success') => { setFeedbackMsg(msg); setTimeout(() => setFeedbackMsg(null), 3000); };
+  const showNotification = (msg, type = 'success') => { setFeedbackMsg({ message: msg, type }); setTimeout(() => setFeedbackMsg(null), 3000); };
 
   return (
     <main className="flex-grow overflow-hidden flex flex-col p-4 lg:p-xl space-y-6">
       {feedbackMsg && (
-        <div className="fixed top-4 right-4 z-50 px-6 py-4 bg-green-50 border border-green-200 text-green-800 shadow-lg flex items-center gap-2 transition-all rounded">
-          <span className="material-symbols-outlined">check_circle</span>
-          <span className="font-label-md text-label-md font-bold">{feedbackMsg}</span>
+        <div className={`fixed top-4 right-4 z-50 px-6 py-4 shadow-lg flex items-center gap-2 transition-all rounded ${
+          feedbackMsg.type === 'error' ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-green-50 border border-green-200 text-green-800'
+        }`}>
+          <span className="material-symbols-outlined">{feedbackMsg.type === 'error' ? 'error' : 'check_circle'}</span>
+          <span className="font-label-md text-label-md font-bold">{feedbackMsg.message}</span>
         </div>
       )}
       <div>

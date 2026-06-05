@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import API_BASE from '../config';
+
 const Login = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +30,7 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,54 +44,12 @@ const Login = ({ onLoginSuccess }) => {
         throw new Error(data.error || 'Login failed. Please check credentials.');
       }
 
-      triggerSuccess(data.user);
+      setLoading(false);
+      onLoginSuccess(data.user);
     } catch (err) {
-      // Graceful fallback simulation if server is unreachable
-      if (err.message.includes('Failed to fetch')) {
-        simulateFallbackLogin(trimmedEmail, password);
-      } else {
-        setError(err.message);
-        setLoading(false);
-      }
-    }
-  };
-
-  // Safe fallback if backend database is offline
-  const simulateFallbackLogin = (emailVal, passVal) => {
-    console.log('Backend offline. Attempting client-side validation...');
-    const lowerEmail = emailVal.toLowerCase();
-    
-    let role = '';
-    let name = '';
-
-    if (lowerEmail === 'claimant@wuerth-professional.com') {
-      role = 'CLAIMANT';
-      name = 'John Doe';
-    } else if (lowerEmail === 'manager@wuerth-professional.com') {
-      role = 'MANAGER';
-      name = 'Jane Manager';
-    } else if (lowerEmail === 'finance@wuerth-professional.com') {
-      role = 'FINANCE';
-      name = 'Finance Master';
-    } else {
-      setError('Invalid credentials.');
+      setError(err.message);
       setLoading(false);
-      return;
     }
-
-    if (passVal !== 'Password123') {
-      setError('Incorrect password.');
-      setLoading(false);
-      return;
-    }
-
-    const mockUser = { id: `mock-${role.toLowerCase()}`, email: lowerEmail, name, role };
-    triggerSuccess(mockUser);
-  };
-
-  const triggerSuccess = (user) => {
-    setLoading(false);
-    onLoginSuccess(user);
   };
 
   const isEmailValid = email === '' || validateEmail(email.trim());

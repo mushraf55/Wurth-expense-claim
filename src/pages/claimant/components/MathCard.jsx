@@ -6,11 +6,11 @@ const MathCard = ({ currency, onCurrencyChange, amount, onAmountChange, fxRateTe
       <div className="flex flex-col gap-1 w-full md:w-auto">
         <label className="font-label-md text-label-md text-secondary font-semibold">Currency</label>
         <select value={currency} onChange={(e) => onCurrencyChange(e.target.value)} className="bg-transparent border-none text-headline-sm font-headline-sm text-on-surface font-semibold focus:ring-0 cursor-pointer p-0 w-24">
+          <option value="AED">د.إ AED</option>
           <option value="EUR">€ EUR</option>
           <option value="USD">$ USD</option>
           <option value="TL">₺ TL</option>
           <option value="CNY">¥ CNY</option>
-          <option value="AED">د.إ AED</option>
         </select>
       </div>
       <div className="w-[1px] h-10 bg-outline-variant hidden md:block" />

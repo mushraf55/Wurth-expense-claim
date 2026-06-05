@@ -5,7 +5,7 @@ import RecentClaimsTable from './components/RecentClaimsTable';
 import ExpenseFormModal from './components/ExpenseFormModal';
 
 const ClaimantWorkspace = ({ currentUser }) => {
-  const { expenses, submitClaim } = useExpenses();
+  const { expenses, submitBulkClaims } = useExpenses();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [notification, setNotification] = useState(null);
 
@@ -17,12 +17,11 @@ const ClaimantWorkspace = ({ currentUser }) => {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const handleSubmitClaim = async (claimPayload) => submitClaim(claimPayload);
+  const handleSubmitClaims = async (claimsData) => submitBulkClaims(claimsData);
 
   const myClaims = expenses
     .filter(e => e.employeeName === (currentUser?.name || 'John Doe'))
-    .sort((a, b) => new Date(b.date || b._id) - new Date(a.date || a._id))
-    .slice(0, 10);
+    .sort((a, b) => new Date(b.date || b._id) - new Date(a.date || a._id));
 
   const estimatedPayout = myClaims.reduce((sum, c) => sum + (parseFloat(c.totalAed) || 0), 0);
 
@@ -46,7 +45,7 @@ const ClaimantWorkspace = ({ currentUser }) => {
       </div>
       <EstimatedPayoutCard estimatedPayout={estimatedPayout} claimsCount={myClaims.length} />
       <RecentClaimsTable claims={myClaims} />
-      <ExpenseFormModal isOpen={isFormOpen} onClose={closeForm} onSubmit={handleSubmitClaim} currentUser={currentUser} />
+      <ExpenseFormModal isOpen={isFormOpen} onClose={closeForm} onSubmit={handleSubmitClaims} />
     </section>
   );
 };

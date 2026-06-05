@@ -63,7 +63,6 @@ const AppContent = ({ currentUser, setCurrentUser, currentTab, setCurrentTab, se
 };
 
 function App() {
-  // Restore session from localStorage on initial load
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('wps_current_user');
@@ -84,7 +83,7 @@ function App() {
 
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Sync currentTab to localStorage whenever it changes
+  // Sync currentTab to localStorage whenever it changes (for refresh persistence)
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('wps_current_tab', currentTab);

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image, pdf } from '@react-pdf/renderer';
+import API_BASE from '../config';
 
 const WURTH_RED = '#DA291C';
 const CHARCOAL_GRAY = '#1F2937';
@@ -433,7 +434,7 @@ const resolveAttachmentSrc = async (att, baseUrl) => {
   if (att.src && att.src.startsWith('data:')) return att.src;
   if (att.objectName) {
     try {
-      const res = await fetch(`${baseUrl || 'http://localhost:3000'}/api/files/download?path=${encodeURIComponent(att.objectName)}`);
+      const res = await fetch(`${baseUrl || API_BASE}/api/files/download?path=${encodeURIComponent(att.objectName)}`);
       const blob = await res.blob();
       return new Promise((resolve) => {
         const reader = new FileReader();
@@ -448,14 +449,10 @@ const resolveAttachmentSrc = async (att, baseUrl) => {
 };
 
 /**
- * Generate and download a Finance-ready PDF for a given claim.
- * @param {Object} claim - The claim object with fields: ref, employeeName, date, purpose, costType, pillar,
- *                         country, currency, amount, totalAed, status, iban, category, receiptNo, description, attachments
- * @param {string} [baseUrl] - Backend base URL for fetching files from MinIO (default: http://localhost:3000)
+ * Generate and download a Finance-ready PDF for a single claim.
  */
 export const generateClaimPdf = async (claim, baseUrl) => {
   try {
-    // Resolve attachment data URLs from MinIO before rendering the PDF
     const resolvedAttachments = [];
     for (const att of (claim.attachments || [])) {
       const resolvedSrc = await resolveAttachmentSrc(att, baseUrl);
@@ -475,6 +472,154 @@ export const generateClaimPdf = async (claim, baseUrl) => {
     return true;
   } catch (err) {
     console.error('PDF generation failed:', err);
+    return false;
+  }
+};
+
+/**
+ * Generate and download a consolidated PDF with multiple claim items in one table.
+ */
+export const generateBulkClaimPdf = async (claims, baseUrl) => {
+  try {
+    // Resolve attachments from the first claim that has them
+    let resolvedAttachments = [];
+    if (claims.length > 0) {
+      for (const att of (claims[0].attachments || [])) {
+        const resolvedSrc = await resolveAttachmentSrc(att, baseUrl);
+        resolvedAttachments.push({ ...att, src: resolvedSrc });
+      }
+    }
+
+    const BulkPdfDocument = ({ items }) => (
+      <Document>
+        <Page size="A4" style={styles.page}>
+          {/* Header */}
+          <View style={styles.headerBanner}>
+            <Text style={styles.headerTitle}>WÜRTH PROFESSIONAL SOLUTIONS</Text>
+          </View>
+          <View style={styles.subHeaderBanner}>
+            <Text style={styles.subHeaderText}>CONSOLIDATED EXPENSE CLAIMS</Text>
+          </View>
+
+          {/* Summary */}
+          <View style={styles.infoGrid}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Total Claims</Text>
+              <Text style={styles.infoValue}>{items.length}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Status</Text>
+              <Text style={[styles.infoValue, { color: '#D97706' }]}>PENDING</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Submission Date</Text>
+              <Text style={styles.infoValue}>{new Date().toLocaleDateString('en-GB')}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>References</Text>
+              <Text style={styles.infoValue}>{items[0]?.ref} ... {items[items.length - 1]?.ref}</Text>
+            </View>
+          </View>
+
+          {/* Table */}
+          <View style={styles.table}>
+            <View style={styles.tableHeaderRow}>
+              {tableColumns.map(col => (
+                <Text key={col.key} style={[styles.tableHeaderCell, col.style]}>{col.label}</Text>
+              ))}
+            </View>
+
+            {items.map((claim, idx) => (
+              <View key={idx} style={idx === items.length - 1 ? styles.tableRowLast : styles.tableRow}>
+                <Text style={[styles.tableCell, styles.colPurpose]}>{claim.purpose}</Text>
+                <Text style={[styles.tableCell, styles.colCostType]}>{claim.costType}</Text>
+                <Text style={[styles.tableCell, styles.colPillar]}>{claim.pillar}</Text>
+                <Text style={[styles.tableCell, styles.colDate]}>{claim.date}</Text>
+                <Text style={[styles.tableCell, styles.colCountry]}>{claim.country}</Text>
+                <Text style={[styles.tableCell, styles.colCurrency]}>{claim.currency}</Text>
+                <Text style={[styles.tableCell, styles.colAmount]}>{(parseFloat(claim.amount) || 0).toFixed(2)}</Text>
+                <Text style={[styles.tableCell, styles.colTotalAed]}>{(parseFloat(claim.totalAed) || 0).toFixed(2)}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Totals */}
+          <View style={styles.totalsSection}>
+            <View style={styles.totalLine}>
+              <Text style={styles.totalLabelText}>Total Items</Text>
+              <Text style={styles.totalValueText}>{items.length}</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.grandTotalRow}>
+              <Text style={styles.grandTotalLabel}>GRAND TOTAL (AED)</Text>
+              <Text style={styles.grandTotalValue}>
+                {items.reduce((s, c) => s + (parseFloat(c.totalAed) || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
+              </Text>
+            </View>
+          </View>
+
+          {/* Bank Details */}
+          <View style={styles.bankSection}>
+            <Text style={styles.bankTitle}>Bank Details for Reimbursement</Text>
+            <View style={styles.bankDetailRow}>
+              <Text style={styles.bankLabel}>Account Holder:</Text>
+              <Text style={styles.bankValue}>{claims[0]?.employeeName || '—'}</Text>
+            </View>
+            <View style={styles.bankDetailRow}>
+              <Text style={styles.bankLabel}>IBAN:</Text>
+              <Text style={styles.bankValue}>{claims[0]?.iban || 'AE****0123'}</Text>
+            </View>
+            <View style={styles.bankDetailRow}>
+              <Text style={styles.bankLabel}>Bank:</Text>
+              <Text style={styles.bankValue}>Deutsche Bank AG</Text>
+            </View>
+            <View style={styles.bankDetailRow}>
+              <Text style={styles.bankLabel}>Currency:</Text>
+              <Text style={styles.bankValue}>AED</Text>
+            </View>
+          </View>
+
+          {/* Attachments */}
+          {resolvedAttachments.filter(a => a.type === 'image').length > 0 && (
+            <View style={styles.attachmentsSection}>
+              <Text style={styles.attachmentTitle}>Attached Receipts ({resolvedAttachments.filter(a => a.type === 'image').length})</Text>
+              <View style={styles.attachmentsRow}>
+                {resolvedAttachments.filter(a => a.type === 'image').map((att, idx) => (
+                  <View key={att.id || idx} style={styles.receiptImageWrapper}>
+                    {att.src ? (
+                      <Image style={styles.receiptImage} src={att.src} />
+                    ) : (
+                      <View style={styles.receiptPlaceholder}>
+                        <Text style={styles.receiptPlaceholderText}>Receipt</Text>
+                      </View>
+                    )}
+                    <Text style={styles.receiptLabel}>{att.name}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Footer */}
+          <Text style={styles.footer}>
+            WÜRTH PROFESSIONAL SOLUTIONS — Expense Management System — Generated on {new Date().toLocaleDateString('en-GB')}
+          </Text>
+        </Page>
+      </Document>
+    );
+
+    const blob = await pdf(<BulkPdfDocument items={claims} />).toBlob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `WPS_Bulk_Claims_${claims[0]?.ref || 'Bulk'}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    return true;
+  } catch (err) {
+    console.error('Bulk PDF generation failed:', err);
     return false;
   }
 };

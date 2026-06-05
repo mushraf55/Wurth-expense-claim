@@ -1,25 +1,29 @@
 import React from 'react';
 import { formatCurrencyDisplay } from '../../../constants/fxRates';
 import { generateClaimPdf } from '../../../utils/generateClaimPdf';
+import API_BASE from '../../../config';
 
 const ClaimDetailDrawer = ({ claim, expenses, onClose, onNotify }) => {
   if (!claim) return null;
 
-  const API_BASE = 'http://localhost:3000';
-
   const handleDownloadPdf = async () => {
     const fullClaim = expenses.find(e => e._id === claim.id);
+    let ok;
     if (fullClaim) {
-      await generateClaimPdf(fullClaim, API_BASE);
+      ok = await generateClaimPdf(fullClaim, API_BASE);
     } else {
-      await generateClaimPdf({
+      ok = await generateClaimPdf({
         ref: claim.receiptId?.replace('#', '') || '', employeeName: claim.claimant, date: claim.date,
         purpose: claim.purpose, costType: claim.costType, pillar: claim.pillar, country: claim.country,
         currency: claim.currency, amount: claim.origAmount, totalAed: claim.totalAed, status: claim.status,
         iban: claim.routing, category: claim.category, receiptNo: claim.receiptId, description: claim.purpose, attachments: []
       }, API_BASE);
     }
-    onNotify('PDF downloaded successfully.', 'success');
+    if (ok) {
+      onNotify('PDF downloaded successfully.', 'success');
+    } else {
+      onNotify('PDF generation failed. Check the browser console for details.', 'error');
+    }
   };
 
   return (
